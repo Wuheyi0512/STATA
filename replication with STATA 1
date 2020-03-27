@@ -139,15 +139,15 @@ proportion aftclass strem sthob stlb_2c stonly stsex new_edu new_occu steco_3c g
 /*儿童参加校外辅导班/兴趣班的Logit回归模型*/
 
 	/*建立模型5-9*/
-	logistic aftclass new_edu new_occu 1.2.3.steco_3c ba18 grade9 stbrd schloc 1.2.3.ctyplace stonly stsex stlb_2c ba13 factor
+	ologit aftclass new_edu new_occu 1.2.3.steco_3c ba18 grade9 stbrd schloc 1.2.3.ctyplace stonly stsex stlb_2c ba13 factor
 	est store m5
-	logistic aftclass new_edu new_occu 1.2.3.steco_3c ba18 grade9 stbrd schloc 1.2.3.ctyplace stonly stsex stlb_2c ba13 factor if ba01 == 1 | ba01 == 3
+	ologit aftclass new_edu new_occu 1.2.3.steco_3c ba18 grade9 stbrd schloc 1.2.3.ctyplace stonly stsex stlb_2c ba13 factor if ba01 == 1 | ba01 == 3
 	est store m6
-	logistic aftclass new_edu new_occu 1.2.3.steco_3c ba18 grade9 stbrd schloc 1.2.3.ctyplace stonly stsex stlb_2c ba13 factor if ba01 == 2 | ba01 == 4
+	ologit aftclass new_edu new_occu 1.2.3.steco_3c ba18 grade9 stbrd schloc 1.2.3.ctyplace stonly stsex stlb_2c ba13 factor if ba01 == 2 | ba01 == 4
 	est store m7
-	logistic strem new_edu new_occu 1.2.3.steco_3c ba18 grade9 stbrd schloc 1.2.3.ctyplace stonly stsex stlb_2c ba13 factor
+	ologit strem new_edu new_occu 1.2.3.steco_3c ba18 grade9 stbrd schloc 1.2.3.ctyplace stonly stsex stlb_2c ba13 factor
 	est store m8
-	logistic sthob new_edu new_occu 1.2.3.steco_3c ba18 grade9 stbrd schloc 1.2.3.ctyplace stonly stsex stlb_2c ba13 factor
+	ologit sthob new_edu new_occu 1.2.3.steco_3c ba18 grade9 stbrd schloc 1.2.3.ctyplace stonly stsex stlb_2c ba13 factor
 	est store m9
 	/*输出表*/
 	esttab m5 m6 m7 m8 m9 using logit.rtf,pr2 ar2 se replace nogap
