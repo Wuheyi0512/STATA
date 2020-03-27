@@ -1,0 +1,152 @@
+Replication on Lin，2018
+
+/*数据预处理*/
+	/*合并CEPS的学生、家长、学校数据*/
+	joinby ids using "C:\Users\15878\Desktop\复制研究\CEPS基线调查家长数据.dta", unmatched(none)
+	joinby schids using "C:\Users\15878\Desktop\复制研究\CEPS基线调查学校数据.dta", unmatched(none)
+	
+	
+	/*修改乱码标签值和个别标签名*/
+	label define LABB 2 "女", modify
+	label define LABJ 10 "其他", add
+	label define stsex 0 "女", modify
+	label define LABI 2 "小学", modify
+	label define stbrd 1 "住校", modify
+	label variable ba03 "校外教育费用（单位：元）"
+	label variable ba13 "亲子陪伴时间（单位：小时）"
+	
+	
+	/*删除无关变量*/
+	keep ids sweight grade9 a01 b08a b08b b1900-b1911 stsex stlb_2c stbrd steco_3c stonly stmedu stfedu ba01 ba03 ba13-ba1405 ba18 be07 be08 be30 pla23 ctyplace
+	/*删除不满足要求观测值*/
+		/*清除父母与继父母外的家长*/
+		drop if ba01 == 5
+		drop if ba01 == 6
+		drop if ba01 == 7
+		drop if ba01 == 8
+		drop if ba01 == 9
+		drop if ba01 == 10
+		drop if ba01 == .
+		/*清除学校位于农村的观测值及缺失值*/
+		drop if pla23 == 5
+		drop if pla23 == .
+		/*清除位于居住社区位于农村的观测值及缺失值*/
+		drop if be30 == 7
+		drop if be30 == .
+		
+		
+	/*对可推测缺失值进行补充*/
+		/*用0补充未补课时b1901-b1910及ba03的缺失值*/
+		replace ba03 = 0 if b1900 == 1, nopromote
+		replace b1901 = 0 if b1900 == 1, nopromote
+		replace b1902 = 0 if b1900 == 1, nopromote
+		replace b1903 = 0 if b1900 == 1, nopromote
+		replace b1904 = 0 if b1900 == 1, nopromote
+		replace b1905 = 0 if b1900 == 1, nopromote
+		replace b1906 = 0 if b1900 == 1, nopromote
+		replace b1907 = 0 if b1900 == 1, nopromote
+		replace b1908 = 0 if b1900 == 1, nopromote
+		replace b1909 = 0 if b1900 == 1, nopromote
+		replace b1910 = 0 if b1900 == 1, nopromote
+		replace b1911 = 0 if b1900 == 1, nopromote
+		/*用stmedu&stfedu来补充家长问卷教育程度变量中的缺失值*/
+		replace be07 = stfedu if be07 == . &( ba01 == 1 | ba01 == 3 )
+		replace be07 = stmedu if be07 == . &( ba01 == 2 | ba01 == 4 )
+		/*用b08a&b08b来补充家长问卷职业变量中的缺失值*/
+		replace be08 = b08a if be08 == . &( ba01 == 2 | ba01 == 4 )
+		replace be08 = b08b if be08 == . &( ba01 == 1 | ba01 == 3 )
+
+		
+	/*按条件生成新的变量*/
+		/*将家长受教育程度替换为回答“是否受过高等教育”的虚拟变量
+		将家长职业替换为回答“是否为白领”的虚拟变量
+		将学校所属地区替换为“是否为中心城区”的虚拟变量*/
+		recode be07 (1 2 3 4 5 6= 0) (7 8 9= 1), prefix(new_edu)
+		rename new_edube07 new_edu
+		label variable new_edu "家长是否受高等教育"
+		label values new_edu LABH
+
+		recode be08 (1 2 3 = 1) (4 5 6 7 8 9 10 = 0), prefix(new_occu)
+		rename new_occube08 new_occu
+		label variable new_occu "家长职业类型"
+		label define occu 0 "非白领" 1 "白领" 
+		label values new_occu occu
+
+		recode pla23 (1 = 1) (2 3 4 5 6 = 0), prefix(schloc)
+		rename schlocpla23 schloc
+		label variable schloc "学校社区类型"
+		label define loc 0 "非中心城区" 1 "中心城区"
+		label values schloc loc
+		
+		/*生成变量“学生是否参与课程辅导班”（变量名strem）
+		生成变量“学生是否参加艺体兴趣班”（变量名sthob）*/
+		gen new=1 if b1901==1 | b1902==1 | b1903==1 | b1904==1
+		replace new = 0 if new == .
+		label variable new "学生是否参加课程辅导班"
+		recast byte new
+		label values new LABH
+		rename new strem
+
+		gen new1=1 if b1905==1 | b1906==1 | b1907==1 | b1908==1 | b1909==1 | b1910 ==1 | b1911 ==1
+		replace new1 = 0 if new1 == .
+		label variable new1 "学生是否参加艺体兴趣班"
+		recast byte new1
+		label values new1 LABH
+		rename new1 sthob
+
+		/*生成新变量"学生是否参加校外辅导班/兴趣班"*/
+		recode b1900 (1 = 0) (0 = 1), prefix(aftclass)
+		label variable aftclassb1900 "学生是否参加校外辅导班/兴趣班"
+		rename aftclassb1900 aftclass
+
+		/*在SPSS中计算出情感互动因子，将因子合并入变量表*/
+		merge 1:1 _n using "C:\Users\15878\Desktop\factor.dta"
+		rename FAC1_1 factor
+		label variable factor "亲子情感互动"
+		summarize factor
+
+	/*清除剩余缺失值及无用变量*/
+	drop if b1900-b1911 == .
+	drop if ba1401 == . |ba1402 == . |ba1403 == . |ba1404 == . |ba1405 == . 
+	drop a01 b08a b08b
+	drop be07-pla23
+
+
+
+/*描述性统计*/
+summarize ba03 ba13 ba18 factor
+proportion aftclass strem sthob stlb_2c stonly stsex new_edu new_occu steco_3c grade9 stbrd schloc ctyplace
+
+
+
+/*儿童校外消费支出的Tobit回归*/
+
+	/*建立模型1-4*/
+	tobit ba03 new_edu new_occu 1.2.3.steco_3c ba18 grade9 stbrd schloc 1.2.3.ctyplace, ll(0)
+	est store m1
+	tobit ba03 new_edu new_occu 1.2.3.steco_3c ba18 grade9 stbrd schloc 1.2.3.ctyplace stonly stsex stlb_2c, ll(0)
+	est store m2
+	tobit ba03 new_edu new_occu 1.2.3.steco_3c ba18 grade9 stbrd schloc 1.2.3.ctyplace ba13 factor, ll(0)
+	est store m3
+	tobit ba03 new_edu new_occu 1.2.3.steco_3c ba18 grade9 stbrd schloc 1.2.3.ctyplace stonly stsex stlb_2c ba13 factor, ll(0)
+	est store m4
+	/*输出表*/
+	esttab m1 m2 m3 m4 using tobit.rtf,pr2 ar2 se replace nogap
+
+	
+	
+/*儿童参加校外辅导班/兴趣班的Logit回归模型*/
+
+	/*建立模型5-9*/
+	logistic aftclass new_edu new_occu 1.2.3.steco_3c ba18 grade9 stbrd schloc 1.2.3.ctyplace stonly stsex stlb_2c ba13 factor
+	est store m5
+	logistic aftclass new_edu new_occu 1.2.3.steco_3c ba18 grade9 stbrd schloc 1.2.3.ctyplace stonly stsex stlb_2c ba13 factor if ba01 == 1 | ba01 == 3
+	est store m6
+	logistic aftclass new_edu new_occu 1.2.3.steco_3c ba18 grade9 stbrd schloc 1.2.3.ctyplace stonly stsex stlb_2c ba13 factor if ba01 == 2 | ba01 == 4
+	est store m7
+	logistic strem new_edu new_occu 1.2.3.steco_3c ba18 grade9 stbrd schloc 1.2.3.ctyplace stonly stsex stlb_2c ba13 factor
+	est store m8
+	logistic sthob new_edu new_occu 1.2.3.steco_3c ba18 grade9 stbrd schloc 1.2.3.ctyplace stonly stsex stlb_2c ba13 factor
+	est store m9
+	/*输出表*/
+	esttab m5 m6 m7 m8 m9 using logit.rtf,pr2 ar2 se replace nogap
