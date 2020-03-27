@@ -1,7 +1,8 @@
 Replication on Lin，2018
 
 /*数据预处理*/
-	/*合并CEPS的学生、家长、学校数据*/
+	/*导入学生数据后合并CEPS的学生、家长、学校数据*/
+	use "C:\Users\15878\Desktop\复制研究\CEPS基线调查学生数据.dta"
 	joinby ids using "C:\Users\15878\Desktop\复制研究\CEPS基线调查家长数据.dta", unmatched(none)
 	joinby schids using "C:\Users\15878\Desktop\复制研究\CEPS基线调查学校数据.dta", unmatched(none)
 	
